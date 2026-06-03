@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INDICADORES BBTS SALVADOR | HUD Dashboard</title>
+    
+    <!-- Fontes e Ícones -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Biblioteca de Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --bg-panel: rgba(10, 15, 30, 0.85);
+            --neon-cyan: #06b6d4;
+            --neon-purple: #a855f7;
+            --neon-green: #22c55e;
+            --neon-pink: #ec4899;
+            --neon-red: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-glow: rgba(6, 182, 212, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 45%),
+                linear-gradient(rgba(6, 182, 212, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--neon-cyan);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.15);
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: 0;
+            width: 150px;
+            height: 5px;
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .header-title-box h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-main);
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title-box h1 span { color: var(--neon-cyan); }
+        .header-title-box p { font-size: 1rem; color: var(--text-muted); letter-spacing: 5px; text-transform: uppercase; }
+
+        .system-status { display: flex; align-items: center; gap: 20px; }
+
+        .status-pill {
+            background: rgba(6, 182, 212, 0.08);
+            border: 1px solid var(--neon-cyan);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .btn-cyber {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid var(--neon-cyan);
+            color: var(--text-main);
+            padding: 8px 16px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cyber:hover {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--neon-cyan);
+            transform: scale(1.03);
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .cyber-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 12px; height: 12px;
+            border-top: 2px solid var(--neon-cyan);
+            border-left: 2px solid var(--neon-cyan);
+        }
+
+        .cyber-card::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 12px; height: 12px;
+            border-bottom: 2px solid var(--neon-pink);
+            border-right: 2px solid var(--neon-pink);
+        }
+
+        .card-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            color: var(--neon-cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 8px;
+        }
+
+        .col-span-3 { grid-column: span 3; }
+        .col-span-2 { grid-column: span 2; }
+        .col-span-1 { grid-column: span 1; }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+
+        .kpi-tile {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--neon-cyan);
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+        .kpi-tile.pink { border-left-color: var(--neon-pink); }
+        .kpi-tile.purple { border-left-color: var(--neon-purple); }
+
+        .kpi-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-value { font-size: 2.2rem; font-weight: 800; color: var(--text-main); margin-top: 5px; font-family: 'Orbitron', sans-serif; }
+
+        .cyber-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .cyber-table th { font-family: 'Orbitron', sans-serif; text-transform: uppercase; font-size: 0.85rem; color: var(--neon-cyan); padding: 10px 12px; border-bottom: 1px solid rgba(6, 182, 212, 0.3); }
+        .cyber-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-weight: 600; }
+        .cyber-table tr:hover td { background: rgba(6, 182, 212, 0.05); color: var(--neon-cyan); }
+
+        .editor-drawer {
+            position: fixed;
+            top: 0; right: -420px;
+            width: 400px; height: 100%;
+            background: rgba(5, 8, 20, 0.95);
+            border-left: 2px solid var(--neon-cyan);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+            padding: 25px;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+        }
+
+        .editor-drawer.open { right: 0; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(6, 182, 212, 0.3); padding-bottom: 15px; margin-bottom: 20px; }
+        .drawer-header h2 { font-family: 'Orbitron', sans-serif; text-transform: uppercase; font-size: 1.3rem; color: var(--neon-cyan); }
+
+        .form-group { margin-bottom: 15px; background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .form-group h4 { color: var(--neon-purple); font-family: 'Orbitron', sans-serif; font-size: 0.9rem; margin-bottom: 8px; text-transform: uppercase; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
+        .form-row label { width: 100px; font-size: 0.85rem; color: var(--text-muted); }
+        .form-row input { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--text-main); padding: 6px 10px; border-radius: 4px; font-weight: bold; }
+        .form-row input:focus { border-color: var(--neon-cyan); outline: none; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 999; display: none; }
+        .overlay.active { display: block; }
+
+        .sheet-config-box { background: rgba(168, 85, 247, 0.05); border: 1px dashed var(--neon-purple); padding: 15px; border-radius: 4px; margin-top: 20px; }
+        .sheet-config-box p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+
+        @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        @media (max-width: 1200px) {
+            .grid-layout { grid-template-columns: 1fr; }
+            .col-span-3, .col-span-2, .col-span-1 { grid-column: span 1; }
+            .kpi-row { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="editorOverlay" onclick="toggleEditor()"></div>
+
+    <div class="dashboard-container">
+        
+        <!-- CABEÇALHO -->
+        <header>
+            <div class="header-title-box">
+                <p>Call Center Ops Salvador</p>
+                <h1>Indicadores <span>BBTS Salvador</span></h1>
+            </div>
+            
+            <div class="system-status">
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    Sistemas Ativos
+                </div>
+                <button class="btn-cyber" onclick="toggleEditor()">
+                    <i class="fa-solid fa-sliders"></i> Painel de Controle
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD GRID -->
+        <main class="grid-layout">
+            
+            <!-- KPIs Globais Consolidados -->
+            <div class="cyber-card col-span-3">
+                <div class="card-header">
+                    <span>Métricas Consolidadas (Média da Operação)</span>
+                    <i class="fa-solid fa-chart-line" style="color: var(--neon-cyan)"></i>
+                </div>
+                <div class="kpi-row">
+                    <div class="kpi-tile">
+                        <span class="kpi-label">Produtividade Média</span>
+                        <span class="kpi-value" id="kpi-prod">85.0%</span>
+                    </div>
+                    <div class="kpi-tile pink">
+                        <span class="kpi-label">IQA Médio</span>
+                        <span class="kpi-value" id="kpi-iqa">92.4%</span>
+                    </div>
+                    <div class="kpi-tile purple">
+                        <span class="kpi-label">Absenteísmo Geral</span>
+                        <span class="kpi-value" id="kpi-abs">2.1%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico 1: Produtividade e IQA -->
+            <div class="cyber-card col-span-2">
+                <div class="card-header">
+                    <span>Performance: Produtividade vs IQA (%)</span>
+                    <i class="fa-solid fa-chart-bar" style="color: var(--neon-cyan);"></i>
+                </div>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="chartMain"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 2: Absenteísmo -->
+            <div class="cyber-card col-span-1">
+                <div class="card-header">
+                    <span>Absenteísmo por Supervisor</span>
+                    <i class="fa-solid fa-user-slash" style="color: var(--neon-purple);"></i>
+                </div>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="chartABS"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabela Detalhada -->
+            <div class="cyber-card col-span-3">
+                <div class="card-header">
+                    <span>Visão Geral Estratégica dos Supervisores</span>
+                    <i class="fa-solid fa-database" style="color: var(--neon-green)"></i>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>Supervisor</th>
+                                <th>Produtividade</th>
+                                <th>IQA (Índice de Qualidade)</th>
+                                <th>Absenteísmo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Inserido dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- PAINEL DE EDIÇÃO DE DADOS (DRAWER) -->
+    <div class="editor-drawer" id="editorDrawer">
+        <div class="drawer-header">
+            <h2><i class="fa-solid fa-terminal"></i> Ajustar Resultados</h2>
+            <button class="btn-cyber" style="padding: 4px 8px; border-color: var(--neon-pink);" onclick="toggleEditor()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+            Insira os dados de fechamento para atualizar os gráficos dinâmicos neon imediatamente.
+        </p>
+
+        <form id="editorForm" onsubmit="atualizarSistemas(event)">
+            <!-- LEIA -->
+            <div class="form-group">
+                <h4>Supervisor: LEIA</h4>
+                <div class="form-row">
+                    <label>Produtividade %</label>
+                    <input type="number" id="edit-leia-prod" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>IQA %</label>
+                    <input type="number" id="edit-leia-iqa" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>Absenteísmo %</label>
+                    <input type="number" id="edit-leia-abs" step="0.1" min="0" max="100">
+                </div>
+            </div>
+
+            <!-- DANILO -->
+            <div class="form-group">
+                <h4>Supervisor: DANILO</h4>
+                <div class="form-row">
+                    <label>Produtividade %</label>
+                    <input type="number" id="edit-danilo-prod" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>IQA %</label>
+                    <input type="number" id="edit-danilo-iqa" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>Absenteísmo %</label>
+                    <input type="number" id="edit-danilo-abs" step="0.1" min="0" max="100">
+                </div>
+            </div>
+
+            <!-- LUÍS -->
+            <div class="form-group">
+                <h4>Supervisor: LUÍS</h4>
+                <div class="form-row">
+                    <label>Produtividade %</label>
+                    <input type="number" id="edit-luis-prod" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>IQA %</label>
+                    <input type="number" id="edit-luis-iqa" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>Absenteísmo %</label>
+                    <input type="number" id="edit-luis-abs" step="0.1" min="0" max="100">
+                </div>
+            </div>
+
+            <!-- GABRIEL -->
+            <div class="form-group">
+                <h4>Supervisor: GABRIEL</h4>
+                <div class="form-row">
+                    <label>Produtividade %</label>
+                    <input type="number" id="edit-gabriel-prod" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>IQA %</label>
+                    <input type="number" id="edit-gabriel-iqa" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-row">
+                    <label>Absenteísmo %</label>
+                    <input type="number" id="edit-gabriel-abs" step="0.1" min="0" max="100">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-cyber" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">
+                <i class="fa-solid fa-floppy-disk"></i> Atualizar Matriz HUD
+            </button>
+        </form>
+
+        <!-- Conector Google Planilhas -->
+        <div class="sheet-config-box">
+            <h4><i class="fa-brands fa-google-drive" style="color: #22c55e;"></i> Link do Google Planilhas</h4>
+            <p>Caso prefira atualizar via Planilha Online, cole o link .csv abaixo:</p>
+            <input type="text" id="sheetUrlInput" placeholder="Cole o link .csv publicado aqui..." 
+                   style="width: 100%; background: #000; border: 1px solid var(--neon-purple); color: #fff; padding: 6px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 8px;">
+            <button class="btn-cyber" style="width: 100%; padding: 6px; font-size: 0.85rem; border-color: var(--neon-purple)" onclick="salvarConfigPlanilha()">
+                Conectar Planilha
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGICA DO SISTEMA -->
+    <script>
+        // Bancos de dados iniciais com os NOVOS SUPERVISORES e NOVOS INDICADORES
+        const defaultData = {
+            leia: { supervisor: "LEIA", prod: 88.5, iqa: 94.2, abs: 1.5 },
+            danilo: { supervisor: "DANILO", prod: 81.2, iqa: 91.0, abs: 2.8 },
+            luis: { supervisor: "LUÍS", prod: 93.0, iqa: 96.5, abs: 0.9 },
+            gabriel: { supervisor: "GABRIEL", prod: 84.1, iqa: 89.8, abs: 3.2 }
+        };
+
+        let dadosSistemas = {};
+        let myChartMain, myChartABS;
+        const nomesExibicao = ['LEIA', 'DANILO', 'LUÍS', 'GABRIEL'];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('bbts_v2_data');
+            if (savedData) {
+                dadosSistemas = JSON.parse(savedData);
+            } else {
+                dadosSistemas = JSON.parse(JSON.stringify(defaultData));
+                localStorage.setItem('bbts_v2_data', JSON.stringify(dadosSistemas));
+            }
+
+            const savedUrl = localStorage.getItem('bbts_v2_sheet_url');
+            if (savedUrl) {
+                document.getElementById('sheetUrlInput').value = savedUrl;
+                buscarDadosDaPlanilha(savedUrl);
+            }
+
+            preencherFormulario();
+            atualizarInterfaceECards();
+            construirGraficos();
+        });
+
+        function toggleEditor() {
+            document.getElementById('editorDrawer').classList.toggle('open');
+            document.getElementById('editorOverlay').classList.toggle('active');
+        }
+
+        function preencherFormulario() {
+            document.getElementById('edit-leia-prod').value = dadosSistemas.leia.prod;
+            document.getElementById('edit-leia-iqa').value = dadosSistemas.leia.iqa;
+            document.getElementById('edit-leia-abs').value = dadosSistemas.leia.abs;
+
+            document.getElementById('edit-danilo-prod').value = dadosSistemas.danilo.prod;
+            document.getElementById('edit-danilo-iqa').value = dadosSistemas.danilo.iqa;
+            document.getElementById('edit-danilo-abs').value = dadosSistemas.danilo.abs;
+
+            document.getElementById('edit-luis-prod').value = dadosSistemas.luis.prod;
+            document.getElementById('edit-luis-iqa').value = dadosSistemas.luis.iqa;
+            document.getElementById('edit-luis-abs').value = dadosSistemas.luis.abs;
+
+            document.getElementById('edit-gabriel-prod').value = dadosSistemas.gabriel.prod;
+            document.getElementById('edit-gabriel-iqa').value = dadosSistemas.gabriel.iqa;
+            document.getElementById('edit-gabriel-abs').value = dadosSistemas.gabriel.abs;
+        }
+
+        function atualizarSistemas(event) {
+            event.preventDefault();
+
+            dadosSistemas.leia.prod = parseFloat(document.getElementById('edit-leia-prod').value) || 0;
+            dadosSistemas.leia.iqa = parseFloat(document.getElementById('edit-leia-iqa').value) || 0;
+            dadosSistemas.leia.abs = parseFloat(document.getElementById('edit-leia-abs').value) || 0;
+
+            dadosSistemas.danilo.prod = parseFloat(document.getElementById('edit-danilo-prod').value) || 0;
+            dadosSistemas.danilo.iqa = parseFloat(document.getElementById('edit-danilo-iqa').value) || 0;
+            dadosSistemas.danilo.abs = parseFloat(document.getElementById('edit-danilo-abs').value) || 0;
+
+            dadosSistemas.luis.prod = parseFloat(document.getElementById('edit-luis-prod').value) || 0;
+            dadosSistemas.luis.iqa = parseFloat(document.getElementById('edit-luis-iqa').value) || 0;
+            dadosSistemas.luis.abs = parseFloat(document.getElementById('edit-luis-abs').value) || 0;
+
+            dadosSistemas.gabriel.prod = parseFloat(document.getElementById('edit-gabriel-prod').value) || 0;
+            dadosSistemas.gabriel.iqa = parseFloat(document.getElementById('edit-gabriel-iqa').value) || 0;
+            dadosSistemas.gabriel.abs = parseFloat(document.getElementById('edit-gabriel-abs').value) || 0;
+
+            localStorage.setItem('bbts_v2_data', JSON.stringify(dadosSistemas));
+            
+            atualizarInterfaceECards();
+            atualizarDadosDosGraficos();
+            toggleEditor();
+        }
+
+        function atualizarInterfaceECards() {
+            const chaves = Object.keys(dadosSistemas);
+            
+            let prodGeral = 0, iqaGeral = 0, absGeral = 0;
+
+            chaves.forEach(key => {
+                prodGeral += dadosSistemas[key].prod;
+                iqaGeral += dadosSistemas[key].iqa;
+                absGeral += dadosSistemas[key].abs;
+            });
+
+            prodGeral = (prodGeral / chaves.length).toFixed(1);
+            iqaGeral = (iqaGeral / chaves.length).toFixed(1);
+            absGeral = (absGeral / chaves.length).toFixed(1);
+
+            document.getElementById('kpi-prod').innerText = `${prodGeral}%`;
+            document.getElementById('kpi-iqa').innerText = `${iqaGeral}%`;
+            document.getElementById('kpi-abs').innerText = `${absGeral}%`;
+
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+
+            chaves.forEach(key => {
+                const item = dadosSistemas[key];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: #fff; font-weight: bold; letter-spacing: 1px;">Supervisor(a) ${item.supervisor}</td>
+                    <td style="color: var(--neon-cyan)">${item.prod}%</td>
+                    <td style="color: var(--neon-pink)">${item.iqa}%</td>
+                    <td style="color: ${item.abs > 3 ? 'var(--neon-red)' : 'var(--neon-green)'}">${item.abs}%</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function construirGraficos() {
+            const ctxMain = document.getElementById('chartMain').getContext('2d');
+            const ctxABS = document.getElementById('chartABS').getContext('2d');
+
+            Chart.defaults.color = '#9ca3af';
+            Chart.defaults.font.family = "'Rajdhani', sans-serif";
+            Chart.defaults.font.size = 14;
+
+            // Gráfico Comparativo Duplo: Produtividade vs IQA
+            myChartMain = new Chart(ctxMain, {
+                type: 'bar',
+                data: {
+                    labels: nomesExibicao,
+                    datasets: [
+                        {
+                            label: 'Produtividade (%)',
+                            data: [dadosSistemas.leia.prod, dadosSistemas.danilo.prod, dadosSistemas.luis.prod, dadosSistemas.gabriel.prod],
+                            backgroundColor: 'rgba(6, 182, 212, 0.4)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 2,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'IQA (%)',
+                            data: [dadosSistemas.leia.iqa, dadosSistemas.danilo.iqa, dadosSistemas.luis.iqa, dadosSistemas.gabriel.iqa],
+                            backgroundColor: 'rgba(236, 72, 153, 0.3)',
+                            borderColor: '#ec4899',
+                            borderWidth: 2,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Gráfico de Linha: Absenteísmo 
+            myChartABS = new Chart(ctxABS, {
+                type: 'line',
+                data: {
+                    labels: nomesExibicao,
+                    datasets: [{
+                        label: 'Absenteísmo (%)',
+                        data: [dadosSistemas.leia.abs, dadosSistemas.danilo.abs, dadosSistemas.luis.abs, dadosSistemas.gabriel.abs],
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderColor: '#a855f7',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function atualizarDadosDosGraficos() {
+            if (!myChartMain || !myChartABS) return;
+
+            myChartMain.data.datasets[0].data = [dadosSistemas.leia.prod, dadosSistemas.danilo.prod, dadosSistemas.luis.prod, dadosSistemas.gabriel.prod];
+            myChartMain.data.datasets[1].data = [dadosSistemas.leia.iqa, dadosSistemas.danilo.iqa, dadosSistemas.luis.iqa, dadosSistemas.gabriel.iqa];
+            myChartMain.update();
+
+            myChartABS.data.datasets[0].data = [dadosSistemas.leia.abs, dadosSistemas.danilo.abs, dadosSistemas.luis.abs, dadosSistemas.gabriel.abs];
+            myChartABS.update();
+        }
+
+        // SUPORTE OPCIONAL PARA PLANILHA GOOGLE
+        function salvarConfigPlanilha() {
+            const urlInput = document.getElementById('sheetUrlInput').value.trim();
+            if (urlInput) {
+                localStorage.setItem('bbts_v2_sheet_url', urlInput);
+                buscarDadosDaPlanilha(urlInput);
+                alert("Canal de dados online configurado!");
+            } else {
+                localStorage.removeItem('bbts_v2_sheet_url');
+                alert("Conexão removida. Usando dados locais.");
+            }
+        }
+
+        async function buscarDadosDaPlanilha(url) {
+            try {
+                const response = await fetch(url);
+                const csvData = await response.text();
+                const linhas = csvData.split('\n');
+                
+                // Formato esperado na Planilha (A partir da linha 2):
+                // chave;supervisor;prod;iqa;abs
+                // Exemplo: leia;LEIA;85;90;1.2
+                for (let i = 1; i < linhas.length; i++) {
+                    const colunas = linhas[i].split(/[;,]/);
+                    if (colunas.length >= 5) {
+                        const chave = colunas[0].trim().toLowerCase();
+                        if (dadosSistemas[chave]) {
+                            dadosSistemas[chave].prod = parseFloat(colunas[2].trim()) || 0;
+                            dadosSistemas[chave].iqa = parseFloat(colunas[3].trim()) || 0;
+                            dadosSistemas[chave].abs = parseFloat(colunas[4].trim()) || 0;
+                        }
+                    }
+                }
+
+                localStorage.setItem('bbts_v2_data', JSON.stringify(dadosSistemas));
+                preencherFormulario();
+                atualizarInterfaceECards();
+                atualizarDadosDosGraficos();
+
+                const statusPill = document.querySelector('.status-pill');
+                statusPill.innerHTML = `<span class="status-dot"></span> Planilha Conectada`;
+                statusPill.style.borderColor = 'var(--neon-green)';
+            } catch (error) {
+                console.error("Erro de sincronização:", error);
+            }
+        }
+    </script>
+</body>
+</html>
